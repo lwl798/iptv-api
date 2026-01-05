@@ -8,6 +8,8 @@ on:
       - master
       - dev
       - gd
+      - lwl
+
 jobs:
   push:
     runs-on: ${{ matrix.operating-system }}
@@ -15,12 +17,10 @@ jobs:
       matrix:
         operating-system: [ 'ubuntu-latest' ]
     steps:
-      - name: Set branch name
-        id: vars
-        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'master' }}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
         with:
-          ref: ${{ env.BRANCH_NAME }}
+          # 检出触发该 workflow 的 ref（避免强制 master）
+          ref: ${{ github.ref }}
       - name: Run with setup-python 3.13
         uses: actions/setup-python@v4
         with:
@@ -63,5 +63,7 @@ jobs:
           git add .
           if ! git diff --staged --quiet; then
             git commit -m "Github Action Auto Updated"
-            git push --force
+            # 解析触发分支并推回该分支
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            git push --force origin "HEAD:refs/heads/${BRANCH_NAME}"
           fi
